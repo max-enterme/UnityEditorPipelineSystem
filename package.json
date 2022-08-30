@@ -1,0 +1,16 @@
+{
+    "name": "pkg.max-enterme.unityeditor-pipeline-system",
+    "version": "0.0.1",
+    "displayName": "UnityEditor Pipeline System",
+    "description": "UnityEditor Pipeline System",
+    "unity": "2021.3",
+    "unityRelease": "8f1",
+    "dependencies": {
+        "com.unity.scriptablebuildpipeline": "1.20.2"
+   },
+    "author": {
+      "name": "MAX",
+      "email": "max.enterme@gmail.com",
+      "url": "https://github.com/max-enterme"
+    }
+  }
