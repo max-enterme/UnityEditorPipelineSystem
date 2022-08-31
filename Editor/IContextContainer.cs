@@ -5,7 +5,7 @@ namespace UnityEditorPipelineSystem
     public interface IContextContainer
     {
         bool ContainsContext<T>(string name = default) where T : IContext;
-        bool ContainsContext<T>(Type type, string name = default) where T : IContext;
+        bool ContainsContext(Type type, string name = default);
 
         T GetContext<T>(string name = default) where T : IContext;
         IContext GetContext(Type type, string name = default);
