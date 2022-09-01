@@ -10,6 +10,9 @@ namespace UnityEditorPipelineSystem
     {
         public static async Task RunAsync(IContextContainer contextContainer, IEnumerable<ITask> tasks)
         {
+            var pipelineLogger = new PipelineLogger("Test", "./progress.log", "./info.log", "./warning.log", "./error.log", "./error.log");
+            contextContainer.SetContext<IPipelineLogger>(pipelineLogger);
+
             foreach (var task in tasks)
             {
                 if (task is ITaskCollection taskCollection)
@@ -21,6 +24,8 @@ namespace UnityEditorPipelineSystem
                     await RunUnitAsync(contextContainer, task);
                 }
             }
+
+            await pipelineLogger.DisposeAsync().ConfigureAwait(false);
         }
 
         private static async Task RunRecursiveAsync(IContextContainer contextContainer, ITaskCollection taskCollection)
