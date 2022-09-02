@@ -67,31 +67,41 @@ namespace UnityEditorPipelineSystem
         public async Task LogProgressAsync(string message)
         {
             Debug.Log($"[{pipelineName}][Progress]{message}");
-            await writerByLogType[LogType.Progress]?.WriteLineAsync($"{message}\n{Environment.StackTrace}");
+
+            if (writerByLogType[LogType.Progress] != null)
+                await writerByLogType[LogType.Progress].WriteLineAsync(message).ConfigureAwait(false);
         }
 
         public async Task LogAsync(string message)
         {
             Debug.Log($"[{pipelineName}][Info]{message}");
-            await writerByLogType[LogType.Log]?.WriteLineAsync($"{message}\n{Environment.StackTrace}");
+
+            if (writerByLogType[LogType.Log] != null)
+                await writerByLogType[LogType.Log].WriteLineAsync($"{message}\n{Environment.StackTrace}").ConfigureAwait(false);
         }
 
         public async Task LogWarningAsync(string message)
         {
             Debug.LogWarning($"[{pipelineName}][Warning]{message}");
-            await writerByLogType[LogType.Warning]?.WriteLineAsync($"{message}\n{Environment.StackTrace}");
+
+            if (writerByLogType[LogType.Warning] != null)
+                await writerByLogType[LogType.Warning].WriteLineAsync($"{message}\n{Environment.StackTrace}").ConfigureAwait(false);
         }
 
         public async Task LogErrorAsync(string message)
         {
             Debug.LogError($"[{pipelineName}][Error]{message}");
-            await writerByLogType[LogType.Error]?.WriteLineAsync($"{message}\n{Environment.StackTrace}");
+
+            if (writerByLogType[LogType.Error] != null)
+                await writerByLogType[LogType.Error].WriteLineAsync($"{message}\n{Environment.StackTrace}").ConfigureAwait(false);
         }
 
         public async Task LogExceptionAsync(Exception exception)
         {
             Debug.LogException(exception);
-            await writerByLogType[LogType.Exception]?.WriteLineAsync(exception.ToString());
+
+            if (writerByLogType[LogType.Exception] != null)
+                await writerByLogType[LogType.Exception].WriteLineAsync(exception.ToString()).ConfigureAwait(false);
         }
 
         public void Dispose()
