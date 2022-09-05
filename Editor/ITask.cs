@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace UnityEditorPipelineSystem
@@ -15,13 +16,15 @@ namespace UnityEditorPipelineSystem
         public Task PostAsync(IContextContainer contextContainer) => default;
     }
 
-    public interface ISyncableTask : ITask
+    public interface ISyncTask : ITask
     {
-        public ITaskResult Run(IContextContainer contextContainer);
+        public ITaskResult Run(IContextContainer contextContainer) => Run(contextContainer, CancellationToken.None);
+        public ITaskResult Run(IContextContainer contextContainer, CancellationToken ct);
     }
 
-    public interface IAsyncableTask : ITask
+    public interface IAsyncTask : ITask
     {
-        public Task<ITaskResult> RunAsync(IContextContainer contextContainer);
+        public Task<ITaskResult> RunAsync(IContextContainer contextContainer) => RunAsync(contextContainer, CancellationToken.None);
+        public Task<ITaskResult> RunAsync(IContextContainer contextContainer, CancellationToken ct);
     }
 }
