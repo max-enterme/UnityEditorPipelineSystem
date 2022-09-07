@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace UnityEditorPipelineSystem
+namespace UnityEditorPipelineSystem.Core
 {
     public class ContextContainer : IContextContainer
     {
@@ -99,7 +99,7 @@ namespace UnityEditorPipelineSystem
                 return true;
             }
 
-            context = default(T);
+            context = default;
             return false;
         }
 

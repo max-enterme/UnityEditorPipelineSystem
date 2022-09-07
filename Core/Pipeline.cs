@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEditorPipelineSystem.Injector;
+using UnityEditorPipelineSystem.Editor;
 
-namespace UnityEditorPipelineSystem
+namespace UnityEditorPipelineSystem.Core
 {
     public class Pipeline : IDisposable, IAsyncDisposable
     {
@@ -20,9 +19,6 @@ namespace UnityEditorPipelineSystem
         private readonly IContextContainer contextContainer;
         private readonly IReadOnlyCollection<ITask> tasks;
 
-        public event Action<string> OnStartTask;
-        public event Action<string> OnFinishedTask;
-
         public Pipeline(string pipelineName, IContextContainer contextContainer, IReadOnlyCollection<ITask> tasks)
         {
             Name = pipelineName;
@@ -32,10 +28,10 @@ namespace UnityEditorPipelineSystem
 
         public async Task RunAsync(CancellationToken ct = default)
         {
-            PipelineLogger pipelineLogger = default;
+            UnityPipelineLogger pipelineLogger = default;
             if (!contextContainer.ContainsContext<IPipelineLogger>())
             {
-                pipelineLogger = new PipelineLogger(Name);
+                pipelineLogger = new UnityPipelineLogger(Name);
                 contextContainer.SetContext<IPipelineLogger>(pipelineLogger);
             }
 
@@ -56,7 +52,6 @@ namespace UnityEditorPipelineSystem
                 await pipelineLogger.DisposeAsync().ConfigureAwait(false);
             }
         }
-
 
         private async Task RunRecursiveAsync(ITaskCollection taskCollection, CancellationToken ct)
         {
@@ -111,14 +106,7 @@ namespace UnityEditorPipelineSystem
                 var logger = contextContainer.GetContext<IPipelineLogger>();
                 var start = DateTime.Now;
                 await logger.LogProgressAsync($"{start} [{task.Name}] Start Task.");
-
-                OnStartTask?.Invoke(task.Name);
-
                 var ret = syncTask.Run(contextContainer, ct);
-
-                OnFinishedTask?.Invoke(task.Name);
-
-
                 var finish = DateTime.Now;
                 var elapsed = finish - start;
                 await logger.LogProgressAsync($"{finish} [{task.Name}] Finish Task. ({elapsed.TotalSeconds}[sec])");
@@ -137,13 +125,7 @@ namespace UnityEditorPipelineSystem
                 var logger = contextContainer.GetContext<IPipelineLogger>();
                 var start = DateTime.Now;
                 await logger.LogProgressAsync($"{start} [{task.Name}] Start Task. ");
-
-                OnStartTask?.Invoke(task.Name);
-
-                var ret = await asyncableTask.RunAsync(contextContainer);
-
-                OnFinishedTask?.Invoke(task.Name);
-
+                var ret = await asyncableTask.RunAsync(contextContainer, ct);
                 var finish = DateTime.Now;
                 var elapsed = finish - start;
                 await logger.LogProgressAsync($"{finish} [{task.Name}] Finish Task. ({elapsed.TotalSeconds}[sec])");

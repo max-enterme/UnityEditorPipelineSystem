@@ -1,4 +1,4 @@
-﻿namespace UnityEditorPipelineSystem
+﻿namespace UnityEditorPipelineSystem.Core
 {
     public class TaskResult : ITaskResult
     {

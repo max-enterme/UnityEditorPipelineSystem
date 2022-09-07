@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UnityEditorPipelineSystem
+namespace UnityEditorPipelineSystem.Core
 {
     public interface IContextContainer
     {

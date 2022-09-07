@@ -3,20 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using UnityEditorPipelineSystem.Core;
 using UnityEngine;
 
-namespace UnityEditorPipelineSystem
+namespace UnityEditorPipelineSystem.Editor
 {
-    public interface IPipelineLogger : IContext
-    {
-        public Task LogProgressAsync(string message);
-        public Task LogAsync(string message);
-        public Task LogWarningAsync(string message);
-        public Task LogErrorAsync(string message);
-        public Task LogExceptionAsync(Exception exception);
-    }
-
-    public class PipelineLogger : IPipelineLogger, IDisposable, IAsyncDisposable
+    public class UnityPipelineLogger : IPipelineLogger, IDisposable, IAsyncDisposable
     {
         private enum LogType
         {
@@ -33,7 +25,7 @@ namespace UnityEditorPipelineSystem
         private readonly Dictionary<LogType, StreamWriter> writerByLogType = new Dictionary<LogType, StreamWriter>();
 
 
-        public PipelineLogger(string pipelineName, string logProgressFile = default, string logFilePath = default, string logWarningFilePath = default, string logErrorFilePath = default, string logExceptionFilePath = default)
+        public UnityPipelineLogger(string pipelineName, string logProgressFile = default, string logFilePath = default, string logWarningFilePath = default, string logErrorFilePath = default, string logExceptionFilePath = default)
         {
             this.pipelineName = pipelineName;
 

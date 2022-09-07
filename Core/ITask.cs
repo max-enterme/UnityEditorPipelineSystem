@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace UnityEditorPipelineSystem
+namespace UnityEditorPipelineSystem.Core
 {
     public interface ITask
     {

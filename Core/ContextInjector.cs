@@ -1,7 +1,7 @@
 using System;
 using System.Reflection;
 
-namespace UnityEditorPipelineSystem.Injector
+namespace UnityEditorPipelineSystem.Core
 {
     [AttributeUsage(AttributeTargets.Field)]
     public class InjectContextAttribute : Attribute
