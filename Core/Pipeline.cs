@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEditorPipelineSystem.Editor;
 
 namespace UnityEditorPipelineSystem.Core
 {
@@ -15,24 +14,43 @@ namespace UnityEditorPipelineSystem.Core
         }
 
         public string Name { get; private set; }
+        public bool IsBusy { get; private set; }
 
         private readonly IContextContainer contextContainer;
         private readonly IReadOnlyCollection<ITask> tasks;
+
+        public Func<IPipelineLogger> PipelineLoggerFactory { private get; set; }
+
+        private IPipelineLogger pipelineLogger = default;
 
         public Pipeline(string pipelineName, IContextContainer contextContainer, IReadOnlyCollection<ITask> tasks)
         {
             Name = pipelineName;
             this.contextContainer = contextContainer;
             this.tasks = tasks;
+
+            PipelineLoggerFactory = PipelineLogger.GetDefaultPipelineLoggerFactory(this);
         }
 
         public async Task RunAsync(CancellationToken ct = default)
         {
-            UnityPipelineLogger pipelineLogger = default;
+            if (IsBusy)
+                throw new InvalidOperationException($"already working: {Name}");
+
+            IsBusy = true;
+
             if (!contextContainer.ContainsContext<IPipelineLogger>())
             {
-                pipelineLogger = new UnityPipelineLogger(Name);
-                contextContainer.SetContext<IPipelineLogger>(pipelineLogger);
+                if (PipelineLoggerFactory != null)
+                {
+                    pipelineLogger = PipelineLoggerFactory.Invoke();
+                }
+                else
+                {
+                    pipelineLogger = PipelineLogger.GetNonePipelineLoggerFactory(this).Invoke();
+                }
+
+                contextContainer.SetContext(pipelineLogger);
             }
 
             foreach (var task in tasks)
@@ -51,6 +69,8 @@ namespace UnityEditorPipelineSystem.Core
             {
                 await pipelineLogger.DisposeAsync().ConfigureAwait(false);
             }
+
+            IsBusy = false;
         }
 
         private async Task RunRecursiveAsync(ITaskCollection taskCollection, CancellationToken ct)
@@ -100,7 +120,6 @@ namespace UnityEditorPipelineSystem.Core
         {
             if (task is ISyncTask syncTask)
             {
-
                 ContextInjector.Inject(contextContainer, task);
 
                 var logger = contextContainer.GetContext<IPipelineLogger>();
@@ -168,6 +187,9 @@ namespace UnityEditorPipelineSystem.Core
             {
                 return;
             }
+
+            pipelineLogger?.Dispose();
+            pipelineLogger = null;
         }
 
         public async ValueTask DisposeAsync()
@@ -182,6 +204,11 @@ namespace UnityEditorPipelineSystem.Core
 
         protected virtual async ValueTask DisposeAsyncCore()
         {
+            if (pipelineLogger != null)
+            {
+                await pipelineLogger.DisposeAsync().ConfigureAwait(false);
+                pipelineLogger = null;
+            }
         }
     }
 }

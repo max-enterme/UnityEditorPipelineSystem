@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace UnityEditorPipelineSystem.Core
 {
-    public interface IPipelineLogger : IContext
+    public interface IPipelineLogger : IContext, IDisposable, IAsyncDisposable
     {
         public Task LogProgressAsync(string message);
         public Task LogAsync(string message);
