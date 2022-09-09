@@ -7,12 +7,6 @@ namespace UnityEditorPipelineSystem.Core
 {
     public class Pipeline : IDisposable, IAsyncDisposable
     {
-        public static async Task RunAsync(string pipelineName, IContextContainer contextContainer, IReadOnlyCollection<ITask> tasks, CancellationToken ct = default)
-        {
-            using var pipeline = new Pipeline(pipelineName, contextContainer, tasks);
-            await pipeline.RunAsync(ct);
-        }
-
         public string Name { get; private set; }
         public bool IsBusy { get; private set; }
 
