@@ -6,18 +6,21 @@ using UnityEngine;
 namespace UnityEditorPipelineSystem.Editor.Contexts
 {
     [CreateAssetMenu(fileName = "GenericContextProvider", menuName = "UnityEditorPipelineSystem/Contexts/GenericContextProvider")]
-    public class GenericContextProvider : ScriptableObject
+    public class GenericContextProvider : ContextProvider
     {
-        [SerializeField] MonoScript script = default;
-        [SerializeReference] IContext instance = default;
+        [SerializeField] private MonoScript script = default;
+        [SerializeField] private string contextName = default;
+        [SerializeReference] private IContext instance = default;
 
-        public IContext GetContext()
-        {
-            return instance;
-        }
+        public override (string name, IContext context) GetContext() => (!string.IsNullOrEmpty(contextName) ? contextName : null, instance);
 
         private void OnValidate()
         {
+            if (script != null && instance != default && script.GetClass() == instance.GetType())
+            {
+                return;
+            }
+
             if (script == default)
             {
                 instance = default;

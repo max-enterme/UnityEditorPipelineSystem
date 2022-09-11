@@ -6,18 +6,23 @@ using UnityEngine;
 namespace UnityEditorPipelineSystem.Editor.Tasks
 {
     [CreateAssetMenu(fileName = "GenericTaskProvider", menuName = "UnityEditorPipelineSystem/Tasks/GenericTaskProvider")]
-    public class GenericTaskProvider : ScriptableObject
+    public class GenericTaskProvider : TaskProvider
     {
-        [SerializeField] MonoScript script = default;
-        [SerializeReference] ITask instance = default;
+        [SerializeField] private MonoScript script = default;
+        [SerializeReference] private ITask instance = default;
 
-        public ITask GetContext()
+        public override ITask GetTask()
         {
             return instance;
         }
 
         private void OnValidate()
         {
+            if (script != null && instance != default && script.GetClass() == instance.GetType())
+            {
+                return;
+            }
+
             if (script == default)
             {
                 instance = default;
