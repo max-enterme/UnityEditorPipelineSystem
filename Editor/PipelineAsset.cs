@@ -15,6 +15,11 @@ namespace UnityEditorPipelineSystem.Editor
         [SerializeField] private List<TaskProvider> taskProviders = default;
 
         [ContextMenu("RunAsync")]
+        private async void RunAsyncForContextMenu()
+        {
+            await RunAsync();
+        }
+
         public async Task RunAsync()
         {
             var contextContainer = new ContextContainer();

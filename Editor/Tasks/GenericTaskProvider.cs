@@ -13,6 +13,7 @@ namespace UnityEditorPipelineSystem.Editor.Tasks
 
         public override ITask GetTask()
         {
+            instance.Name = name;
             return instance;
         }
 

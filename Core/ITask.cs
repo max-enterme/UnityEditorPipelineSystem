@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -6,14 +6,14 @@ namespace UnityEditorPipelineSystem.Core
 {
     public interface ITask
     {
-        public string Name => GetType().FullName;
+        public string Name { get; set; }
     }
 
     public interface ITaskCollection : ITask
     {
         public bool When(IContextContainer contextContainer) => true;
         public IEnumerable<ITask> EnumerateTasks();
-        public Task PostAsync(IContextContainer contextContainer) => default;
+        public Task PostAsync(IContextContainer contextContainer) => Task.CompletedTask;
     }
 
     public interface ISyncTask : ITask
