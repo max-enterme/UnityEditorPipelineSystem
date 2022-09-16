@@ -20,16 +20,20 @@ namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversio
         [ContextMenu("Build Properties")]
         public void BuildProperties()
         {
+            // TODO
+            // SerializeField のリスト取得
+            // 各フィールドに対応する CommandLineArgumentProperty のリストを生成する
         }
 
         [ContextMenu("Clear Properties")]
         public void ClearProperties()
         {
+            properties.Clear();
         }
 
         private void OnValidate()
         {
-            if (script != null)
+            if (script == null)
             {
                 return;
             }
