@@ -1,9 +1,14 @@
+﻿using UnityEngine;
+
 namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversion.ValueConverters
 {
-    public interface IValueConverter
+    public class BooleanValueConverter : IValueConverter
     {
-        public object DefaultValue { get; }
-        public object Convert(string value);
+        [SerializeField] private bool defaultValue;
+
+        public object DefaultValue => defaultValue;
+
+        public object Convert(string text) => bool.Parse(text);
     }
 
     //public class EnumValueConverter : IValueConverter

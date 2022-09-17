@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEditorPipelineSystem.Core;
 using UnityEngine;
@@ -20,9 +23,34 @@ namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversio
         [ContextMenu("Build Properties")]
         public void BuildProperties()
         {
+            var type = script != null ? script.GetClass() : null;
+            if (type == null)
+            {
+                return;
+            }
+
             // TODO
             // SerializeField のリスト取得
             // 各フィールドに対応する CommandLineArgumentProperty のリストを生成する
+            var serializeFields = GetSerializeFields(type);
+            foreach (var field in serializeFields)
+            {
+                Debug.Log($"{field.Name}:{field.FieldType}:{field.GetHashCode()}");
+            }
+        }
+
+        private static IReadOnlyCollection<FieldInfo> GetSerializeFields(Type target)
+        {
+            var serializeFields = new HashSet<FieldInfo>();
+
+            //for (var current = target; current != null; current = current.BaseType)
+            var current = target;
+            {
+                serializeFields.UnionWith(current.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                    .Where(x => x.GetCustomAttribute<SerializeField>(true) != null));
+            }
+
+            return serializeFields;
         }
 
         [ContextMenu("Clear Properties")]
