@@ -7,9 +7,10 @@ namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversio
     [Serializable]
     public class CommandLineArgumentProperty
     {
-        [SerializeField] private string optionName;
-        [SerializeField] private string bindingField;
-        [SerializeField] private bool required;
+        [field: SerializeField] public string OptionName { get; set; }
+        [field: SerializeField] public string BindingField { get; set; }
+        [field: SerializeField] public bool Required { get; set; }
+
         [SerializeReference] private IValueConverter converter;
 
         public void SetConverter(IValueConverter valueConverter)

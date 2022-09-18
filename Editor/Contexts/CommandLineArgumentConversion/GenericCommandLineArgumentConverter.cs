@@ -35,22 +35,51 @@ namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversio
             var serializeFields = GetSerializeFields(type);
             foreach (var field in serializeFields)
             {
-                Debug.Log($"{field.Name}:{field.FieldType}:{field.GetHashCode()}");
+                // TODO
+                // 更新対応
+
+                var property = new CommandLineArgumentProperty();
+
+                property.BindingField = $"{field.DeclaringType}:{field.Name}";
+
+                var fieldName = field.Name;
+                if (fieldName.StartsWith("<"))
+                {
+                    fieldName = fieldName.Substring(1, fieldName.IndexOf(">") - 1);
+                }
+
+                if (!string.IsNullOrEmpty(contextName))
+                {
+                    property.OptionName = $"{contextName}.{fieldName}";
+                }
+                else
+                {
+                    property.OptionName = $"{type.Name}.{fieldName}";
+                }
+
+                //property.SetConverter(default);
+
+                properties.Add(property);
             }
         }
 
         private static IReadOnlyCollection<FieldInfo> GetSerializeFields(Type target)
         {
-            var serializeFields = new HashSet<FieldInfo>();
+            var serializeFields = new Dictionary<string, FieldInfo>();
 
-            //for (var current = target; current != null; current = current.BaseType)
-            var current = target;
+            for (var current = target; current != null; current = current.BaseType)
             {
-                serializeFields.UnionWith(current.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
-                    .Where(x => x.GetCustomAttribute<SerializeField>(true) != null));
+                var fields = current.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                    .Where(x => x.GetCustomAttribute<SerializeField>(true) != null);
+
+                foreach (var field in fields)
+                {
+                    // FIXME
+                    serializeFields[field.Name] = field;
+                }
             }
 
-            return serializeFields;
+            return serializeFields.Values.ToArray();
         }
 
         [ContextMenu("Clear Properties")]
