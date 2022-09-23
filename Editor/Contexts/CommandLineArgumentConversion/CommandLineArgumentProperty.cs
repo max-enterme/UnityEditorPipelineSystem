@@ -10,12 +10,6 @@ namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversio
         [field: SerializeField] public string OptionName { get; set; }
         [field: SerializeField] public string BindingField { get; set; }
         [field: SerializeField] public bool Required { get; set; }
-
-        [SerializeReference] private IValueConverter converter;
-
-        public void SetConverter(IValueConverter valueConverter)
-        {
-            converter = valueConverter;
-        }
+        [field: SerializeReference] public IValueConverter Converter { get; set; }
     }
 }

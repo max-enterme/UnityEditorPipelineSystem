@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace UnityEditorPipelineSystem.Editor.Contexts
 {
+    [CreateAssetMenu(fileName = "CommandLineArgumentContainerProvider", menuName = "UnityEditorPipelineSystem/Contexts/CommandLineArgumentContainerProvider")]
     public class CommandLineArgumentContainerProvider : ContextProvider
     {
         [SerializeField] private List<CommandLineArgumentConverter> converters = default;
