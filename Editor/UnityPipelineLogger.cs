@@ -16,9 +16,23 @@ namespace UnityEditorPipelineSystem.Editor
             };
         }
 
+        public static Func<IPipelineLogger> GetBatchModeDefaultPipelineLoggerFactory(Pipeline pipeline)
+        {
+            return () =>
+            {
+                var cliOptions = CommandLineArgumentContainer.Create();
+                var logProgress = cliOptions.GetOrDefaultOptionValue("logProgress");
+                var logVerbose = cliOptions.GetOrDefaultOptionValue("logVerbose");
+                var logWarning = cliOptions.GetOrDefaultOptionValue("logWarning");
+                var logError = cliOptions.GetOrDefaultOptionValue("logError");
+                return new UnityPipelineLogger(pipeline.Name, logProgress, logVerbose, logWarning, logError, logError);
+            };
+        }
+
         public UnityPipelineLogger(string pipelineName, string logProgressFile = default, string logFilePath = default, string logWarningFilePath = default, string logErrorFilePath = default, string logExceptionFilePath = default)
             : base(pipelineName, logProgressFile, logFilePath, logWarningFilePath, logErrorFilePath, logExceptionFilePath)
         {
+            Application.logMessageReceivedThreaded += OnLogMessageReceivedThreaded;
         }
 
         public override async Task LogProgressAsync(string message)
@@ -49,6 +63,48 @@ namespace UnityEditorPipelineSystem.Editor
         {
             Debug.LogException(exception);
             await base.LogExceptionAsync(exception);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Application.logMessageReceivedThreaded -= OnLogMessageReceivedThreaded;
+            }
+
+            base.Dispose(disposing);
+        }
+
+        protected override async ValueTask DisposeAsyncCore()
+        {
+            Application.logMessageReceivedThreaded -= OnLogMessageReceivedThreaded;
+
+            await base.DisposeAsyncCore();
+        }
+
+        private async void OnLogMessageReceivedThreaded(string condition, string stackTrace, UnityEngine.LogType type)
+        {
+            if (condition.StartsWith($"[{pipelineName}]"))
+            {
+                return;
+            }
+
+            switch (type)
+            {
+                case UnityEngine.LogType.Log:
+                    await LogAsync(condition);
+                    break;
+                case UnityEngine.LogType.Warning:
+                    await LogWarningAsync(condition);
+                    break;
+                case UnityEngine.LogType.Error:
+                case UnityEngine.LogType.Assert:
+                    await LogErrorAsync(condition);
+                    break;
+                case UnityEngine.LogType.Exception:
+                    await LogExceptionAsync(new Exception(condition));
+                    break;
+            }
         }
     }
 }

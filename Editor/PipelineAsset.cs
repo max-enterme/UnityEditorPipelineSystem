@@ -31,7 +31,14 @@ namespace UnityEditorPipelineSystem.Editor
 
             var tasks = taskProviders.Select(x => x.GetTask()).ToArray();
 
-            await PipelineUtility.RunAsync(name, contextContainer, tasks);
+            if (Application.isBatchMode)
+            {
+                await PipelineUtility.RunAsync(name, contextContainer, tasks, UnityPipelineLogger.GetBatchModeDefaultPipelineLoggerFactory);
+            }
+            else
+            {
+                await PipelineUtility.RunAsync(name, contextContainer, tasks, UnityPipelineLogger.GetDefaultPipelineLoggerFactory);
+            }
         }
     }
 }

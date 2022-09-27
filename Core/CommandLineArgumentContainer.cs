@@ -25,7 +25,7 @@ namespace UnityEditorPipelineSystem.Core
             {
                 if (args[i].StartsWith("-"))
                 {
-                    container.options.Add(args[i], args.ElementAtOrDefault(i + 1));
+                    container.options.Add(args[i][1..], args.ElementAtOrDefault(i + 1));
                 }
             }
 
@@ -51,6 +51,11 @@ namespace UnityEditorPipelineSystem.Core
         public string GetOptionValue(string optionName)
         {
             return options[optionName];
+        }
+
+        public string GetOrDefaultOptionValue(string optionName)
+        {
+            return options.TryGetValue(optionName, out var optionValue) ? optionValue : default;
         }
 
         public bool TryGetOptionValue(string optionName, out string optionValue)

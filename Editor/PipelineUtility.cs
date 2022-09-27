@@ -18,11 +18,6 @@ namespace UnityEditorPipelineSystem.Editor
             await pipelineAsset.RunAsync();
         }
 
-        public static Task RunAsync(string name, IContextContainer contextContainer, IReadOnlyCollection<ITask> tasks)
-        {
-            return RunAsync(name, contextContainer, tasks, UnityPipelineLogger.GetDefaultPipelineLoggerFactory);
-        }
-
         public static async Task RunAsync(string name, IContextContainer contextContainer, IReadOnlyCollection<ITask> tasks, Func<Pipeline, Func<IPipelineLogger>> loggerFactory)
         {
             using var pipeline = new Pipeline(name, contextContainer, tasks);
