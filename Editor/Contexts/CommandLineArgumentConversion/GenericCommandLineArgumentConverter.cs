@@ -14,6 +14,7 @@ namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversio
     {
         [SerializeField] private MonoScript script = default;
         [SerializeField] private string contextName = default;
+        [SerializeField] private ValueConverterFactoryProvider overrideValueConverterFactoryProvider = default;
         [SerializeField] private List<CommandLineArgumentProperty> properties = default;
 
         public override (string name, IContext context) ToContext(ICommandLineArgumentContainer container)
@@ -22,8 +23,22 @@ namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversio
 
             foreach (var property in properties)
             {
+                if (property.Required)
+                {
+                    if (property.Converter == null)
+                    {
+                        throw new Exception($"converter not set: {name} / {property.OptionName}");
+                    }
+
+                    if (Application.isBatchMode && !container.ContainsOption(property.OptionName))
+                    {
+                        throw new Exception($"Specified option not set: {name} / {property.OptionName}");
+                    }
+                }
+
                 if (property.Converter == null)
                 {
+                    Debug.LogWarning($"converter not set: {name} / {property.OptionName}");
                     continue;
                 }
 
@@ -52,6 +67,8 @@ namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversio
                 return;
             }
 
+            var valueConverterFactory = GetValueConverterFactory();
+
             var serializeFields = GetSerializeFields(type);
             foreach (var field in serializeFields)
             {
@@ -78,7 +95,7 @@ namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversio
                 }
 
                 property.BindingField = $"{field.DeclaringType.AssemblyQualifiedName}:{field.Name}";
-                property.Converter = GetValueConverter(field);
+                property.Converter = valueConverterFactory.GetValueConverter(field);
 
                 properties.Add(property);
             }
@@ -102,47 +119,11 @@ namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversio
             return serializeFields.Values.ToArray();
         }
 
-        private IValueConverter GetValueConverter(FieldInfo info)
+        private IValueConverterFactory GetValueConverterFactory()
         {
-            if (info.FieldType.IsEnum)
-            {
-                return new EnumValueConverter(info.FieldType);
-            }
-
-            if (StructValueConverter.IsStructType(info.FieldType))
-            {
-                return new StructValueConverter(info.FieldType);
-            }
-
-            switch (Type.GetTypeCode(info.FieldType))
-            {
-                case TypeCode.Boolean:
-                    return new BooleanValueConverter();
-                case TypeCode.Byte:
-                    return new ByteValueConverter();
-                case TypeCode.SByte:
-                    return new SByteValueConverter();
-                case TypeCode.Char:
-                    return new CharValueConverter();
-                case TypeCode.Double:
-                    return new DoubleValueConverter();
-                case TypeCode.Single:
-                    return new SingleValueConverter();
-                case TypeCode.Int32:
-                    return new Int32ValueConverter();
-                case TypeCode.UInt32:
-                    return new UInt32ValueConverter();
-                case TypeCode.Int64:
-                    return new Int64ValueConverter();
-                case TypeCode.UInt64:
-                    return new UInt64ValueConverter();
-                case TypeCode.Int16:
-                    return new Int16ValueConverter();
-                case TypeCode.UInt16:
-                    return new UInt16ValueConverter();
-                default:
-                    return default;
-            }
+            return overrideValueConverterFactoryProvider != null
+                ? overrideValueConverterFactoryProvider
+                : new DefaultValueConverterFactory();
         }
 
         [ContextMenu("Clear Properties")]

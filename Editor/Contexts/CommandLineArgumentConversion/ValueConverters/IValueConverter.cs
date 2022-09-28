@@ -5,12 +5,4 @@ namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversio
         public object DefaultValue { get; }
         public object Convert(string value);
     }
-
-    //public class EnumValueConverter : IValueConverter
-    //{
-    //}
-
-    //public class StructValueConverter : IValueConverter
-    //{
-    //}
 }
