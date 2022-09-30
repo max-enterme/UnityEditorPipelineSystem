@@ -1,75 +1,99 @@
 using System;
 using System.Threading.Tasks;
-using UnityEditorPipelineSystem.Core;
 using UnityEngine;
 
 namespace UnityEditorPipelineSystem.Editor
 {
-    public class UnityPipelineLogger : PipelineLogger
+    public class UnityPipelineLogger : Core.Logger, ILogHandler
     {
-        public static new Func<IPipelineLogger> GetDefaultPipelineLoggerFactory(Pipeline pipeline)
+        private static ILogHandler defaultUnityLogHandler;
+        private static ILogHandler GetDefaultUnityLogHandler()
         {
-            return () =>
-            {
-                var directory = $"Library/pkg.max-enterme.unityeditor-pipeline-system/Logs/{pipeline.Name}";
-                return new UnityPipelineLogger(pipeline.Name, $"{directory}/progress.log", $"{directory}/verbose.log", $"{directory}/warning.log", $"{directory}/error.log", $"{directory}/error.log");
-            };
+            return defaultUnityLogHandler ?? (defaultUnityLogHandler = Debug.unityLogger.logHandler);
         }
 
-        public static Func<IPipelineLogger> GetBatchModeDefaultPipelineLoggerFactory(Pipeline pipeline)
+        private static void StoreDefaultUnityLogHandler()
         {
-            return () =>
-            {
-                var cliOptions = CommandLineArgumentContainer.Create();
-                var logProgress = cliOptions.GetOrDefaultOptionValue("logProgress");
-                var logVerbose = cliOptions.GetOrDefaultOptionValue("logVerbose");
-                var logWarning = cliOptions.GetOrDefaultOptionValue("logWarning");
-                var logError = cliOptions.GetOrDefaultOptionValue("logError");
-                return new UnityPipelineLogger(pipeline.Name, logProgress, logVerbose, logWarning, logError, logError);
-            };
+            _ = GetDefaultUnityLogHandler();
         }
 
-        public UnityPipelineLogger(string pipelineName, string logProgressFile = default, string logFilePath = default, string logWarningFilePath = default, string logErrorFilePath = default, string logExceptionFilePath = default)
-            : base(pipelineName, logProgressFile, logFilePath, logWarningFilePath, logErrorFilePath, logExceptionFilePath)
+        public UnityPipelineLogger(string logProgressFile = default, string logFilePath = default, string logWarningFilePath = default, string logErrorFilePath = default, string logExceptionFilePath = default)
+            : base(logProgressFile, logFilePath, logWarningFilePath, logErrorFilePath, logExceptionFilePath)
         {
-            Application.logMessageReceivedThreaded += OnLogMessageReceivedThreaded;
+            StoreDefaultUnityLogHandler();
+            Debug.unityLogger.logHandler = this;
         }
 
-        public override async Task LogProgressAsync(string message)
+        public override async Task LogProgressAsync(string pipelineName, string message)
         {
-            Debug.Log($"[{pipelineName}][Progress]{message}");
-            await base.LogProgressAsync(message);
+            LogFormatInternal(LogType.Log, $"[{pipelineName}][Progress]{message}");
+            await base.LogProgressAsync(pipelineName, message);
         }
 
-        public override async Task LogAsync(string message)
+        public override async Task LogAsync(string pipelineName, string message)
         {
-            Debug.Log($"[{pipelineName}][Info]{message}");
-            await base.LogAsync(message);
+            LogFormatInternal(LogType.Log, $"[{pipelineName}][Info]{message}");
+            await base.LogAsync(pipelineName, message);
         }
 
-        public override async Task LogWarningAsync(string message)
+        public override async Task LogWarningAsync(string pipelineName, string message)
         {
-            Debug.LogWarning($"[{pipelineName}][Warning]{message}");
-            await base.LogWarningAsync(message);
+            LogFormatInternal(LogType.Warning, $"[{pipelineName}][Warning]{message}");
+            await base.LogWarningAsync(pipelineName, message);
         }
 
-        public override async Task LogErrorAsync(string message)
+        public override async Task LogErrorAsync(string pipelineName, string message)
         {
-            Debug.LogError($"[{pipelineName}][Error]{message}");
-            await base.LogErrorAsync(message);
+            LogFormatInternal(LogType.Error, $"[{pipelineName}][Error]{message}");
+            await base.LogErrorAsync(pipelineName, message);
         }
 
-        public override async Task LogExceptionAsync(Exception exception)
+        public override async Task LogExceptionAsync(string pipelineName, Exception exception)
         {
-            Debug.LogException(exception);
-            await base.LogExceptionAsync(exception);
+            GetDefaultUnityLogHandler().LogException(exception, null);
+            await base.LogExceptionAsync(pipelineName, exception);
+        }
+
+        public override void LogProgress(string pipelineName, string message)
+        {
+            LogFormatInternal(LogType.Log, $"[{pipelineName}][Progress]{message}");
+            base.LogProgress(pipelineName, message);
+        }
+
+        public override void Log(string pipelineName, string message)
+        {
+            LogFormatInternal(LogType.Log, $"[{pipelineName}][Info]{message}");
+            base.Log(pipelineName, message);
+        }
+
+        public override void LogWarning(string pipelineName, string message)
+        {
+            LogFormatInternal(LogType.Warning, $"[{pipelineName}][Warning]{message}");
+            base.LogWarning(pipelineName, message);
+        }
+
+        public override void LogError(string pipelineName, string message)
+        {
+            LogFormatInternal(LogType.Error, $"[{pipelineName}][Error]{message}");
+            base.LogError(pipelineName, message);
+        }
+
+        public override void LogException(string pipelineName, Exception exception)
+        {
+            GetDefaultUnityLogHandler().LogException(exception, null);
+            base.LogException(pipelineName, exception);
+        }
+
+        private void LogFormatInternal(LogType logType, string message)
+        {
+            GetDefaultUnityLogHandler().LogFormat(logType, null, "{0}", message);
         }
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                Application.logMessageReceivedThreaded -= OnLogMessageReceivedThreaded;
+                Debug.unityLogger.logHandler = GetDefaultUnityLogHandler();
             }
 
             base.Dispose(disposing);
@@ -77,34 +101,36 @@ namespace UnityEditorPipelineSystem.Editor
 
         protected override async ValueTask DisposeAsyncCore()
         {
-            Application.logMessageReceivedThreaded -= OnLogMessageReceivedThreaded;
+            Debug.unityLogger.logHandler = GetDefaultUnityLogHandler();
 
             await base.DisposeAsyncCore();
         }
 
-        private async void OnLogMessageReceivedThreaded(string condition, string stackTrace, UnityEngine.LogType type)
+        public void LogFormat(LogType logType, UnityEngine.Object context, string format, params object[] args)
         {
-            if (condition.StartsWith($"[{pipelineName}]"))
+            GetDefaultUnityLogHandler().LogFormat(logType, context, format, args);
+            switch (logType)
             {
-                return;
+                case LogType.Log:
+                    base.Log("UnityEngine.Debug.Log", string.Format(format, args));
+                    break;
+                case LogType.Warning:
+                    base.LogWarning("UnityEngine.Debug.LogWarning", string.Format(format, args));
+                    break;
+                case LogType.Error:
+                case LogType.Assert:
+                    base.LogError("UnityEngine.Debug.LogError", string.Format(format, args));
+                    break;
+                case LogType.Exception:
+                    base.LogException("UnityEngine.Debug.LogException", new Exception(string.Format(format, args)));
+                    break;
             }
+        }
 
-            switch (type)
-            {
-                case UnityEngine.LogType.Log:
-                    await LogAsync(condition);
-                    break;
-                case UnityEngine.LogType.Warning:
-                    await LogWarningAsync(condition);
-                    break;
-                case UnityEngine.LogType.Error:
-                case UnityEngine.LogType.Assert:
-                    await LogErrorAsync(condition);
-                    break;
-                case UnityEngine.LogType.Exception:
-                    await LogExceptionAsync(new Exception(condition));
-                    break;
-            }
+        public void LogException(Exception exception, UnityEngine.Object context)
+        {
+            GetDefaultUnityLogHandler().LogException(exception, context);
+            base.LogException("UnityEngine.Debug.LogException", exception);
         }
     }
 }

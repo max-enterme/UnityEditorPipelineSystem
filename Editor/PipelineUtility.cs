@@ -15,6 +15,8 @@ namespace UnityEditorPipelineSystem.Editor
             try
             {
                 var cliOptions = CommandLineArgumentContainer.Create();
+                using var logger = CreateLogger(cliOptions);
+                PipelineDebug.Logger = logger;
 
                 var path = cliOptions.GetOptionValue("PipelineAssetPath");
                 var pipelineAsset = AssetDatabase.LoadAssetAtPath<PipelineAsset>(path);
@@ -27,6 +29,8 @@ namespace UnityEditorPipelineSystem.Editor
             }
             finally
             {
+                PipelineDebug.Logger = default;
+
                 if (Application.isBatchMode)
                 {
                     EditorApplication.Exit(success ? 0 : 1);
@@ -34,11 +38,19 @@ namespace UnityEditorPipelineSystem.Editor
             }
         }
 
-        public static async Task RunAsync(string name, IContextContainer contextContainer, IReadOnlyCollection<ITask> tasks, Func<Pipeline, Func<IPipelineLogger>> loggerFactory)
+        public static async Task RunAsync(string name, IContextContainer contextContainer, IReadOnlyCollection<ITask> tasks)
         {
             using var pipeline = new Pipeline(name, contextContainer, tasks);
-            pipeline.PipelineLoggerFactory = loggerFactory(pipeline);
             await pipeline.RunAsync();
+        }
+
+        private static UnityPipelineLogger CreateLogger(CommandLineArgumentContainer cliOptions)
+        {
+            var logProgress = cliOptions.GetOrDefaultOptionValue("logProgress");
+            var logVerbose = cliOptions.GetOrDefaultOptionValue("logVerbose");
+            var logWarning = cliOptions.GetOrDefaultOptionValue("logWarning");
+            var logError = cliOptions.GetOrDefaultOptionValue("logError");
+            return new UnityPipelineLogger(logProgress, logVerbose, logWarning, logError, logError);
         }
     }
 }

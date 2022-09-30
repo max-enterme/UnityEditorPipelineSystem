@@ -6,43 +6,22 @@ using System.Threading.Tasks;
 
 namespace UnityEditorPipelineSystem.Core
 {
-    public class PipelineLogger : IPipelineLogger, IDisposable, IAsyncDisposable
+    public enum LogType
     {
-        protected enum LogType
-        {
-            Progress,
-            Log,
-            Warning,
-            Error,
-            Exception,
-        }
+        Progress,
+        Log,
+        Warning,
+        Error,
+        Exception,
+    }
 
-        public static Func<IPipelineLogger> GetDefaultPipelineLoggerFactory(Pipeline pipeline)
-        {
-            return () =>
-            {
-                var directory = $"Library/pkg.max-enterme.unityeditor-pipeline-system/Logs/{pipeline.Name}";
-                return new PipelineLogger(pipeline.Name, $"{directory}/progress.log", $"{directory}/verbose.log", $"{directory}/warning.log", $"{directory}/error.log", $"{directory}/error.log");
-            };
-        }
-
-        public static Func<IPipelineLogger> GetNonePipelineLoggerFactory(Pipeline pipeline)
-        {
-            return () =>
-            {
-                return new PipelineLogger(pipeline.Name);
-            };
-        }
-
-        protected readonly string pipelineName;
-
+    public class Logger : ILogger
+    {
         protected readonly Dictionary<string, StreamWriter> writerByFilePath = new Dictionary<string, StreamWriter>();
         protected readonly Dictionary<LogType, StreamWriter> writerByLogType = new Dictionary<LogType, StreamWriter>();
 
-        public PipelineLogger(string pipelineName, string logProgressFile = default, string logFilePath = default, string logWarningFilePath = default, string logErrorFilePath = default, string logExceptionFilePath = default)
+        public Logger(string logProgressFile = default, string logFilePath = default, string logWarningFilePath = default, string logErrorFilePath = default, string logExceptionFilePath = default)
         {
-            this.pipelineName = pipelineName;
-
             GenerateWriter(logProgressFile, LogType.Progress);
             GenerateWriter(logFilePath, LogType.Log);
             GenerateWriter(logWarningFilePath, LogType.Warning);
@@ -69,35 +48,41 @@ namespace UnityEditorPipelineSystem.Core
             }
         }
 
-        public virtual async Task LogProgressAsync(string message)
+        public virtual async Task LogProgressAsync(string pipelineName, string message)
         {
             if (writerByLogType[LogType.Progress] != null)
                 await writerByLogType[LogType.Progress].WriteLineAsync(message).ConfigureAwait(false);
         }
 
-        public virtual async Task LogAsync(string message)
+        public virtual async Task LogAsync(string pipelineName, string message)
         {
             if (writerByLogType[LogType.Log] != null)
-                await writerByLogType[LogType.Log].WriteLineAsync($"{message}\n{Environment.StackTrace}").ConfigureAwait(false);
+                await writerByLogType[LogType.Log].WriteLineAsync($"{message}\n{Environment.StackTrace}\n").ConfigureAwait(false);
         }
 
-        public virtual async Task LogWarningAsync(string message)
+        public virtual async Task LogWarningAsync(string pipelineName, string message)
         {
             if (writerByLogType[LogType.Warning] != null)
-                await writerByLogType[LogType.Warning].WriteLineAsync($"{message}\n{Environment.StackTrace}").ConfigureAwait(false);
+                await writerByLogType[LogType.Warning].WriteLineAsync($"{message}\n{Environment.StackTrace}\n").ConfigureAwait(false);
         }
 
-        public virtual async Task LogErrorAsync(string message)
+        public virtual async Task LogErrorAsync(string pipelineName, string message)
         {
             if (writerByLogType[LogType.Error] != null)
-                await writerByLogType[LogType.Error].WriteLineAsync($"{message}\n{Environment.StackTrace}").ConfigureAwait(false);
+                await writerByLogType[LogType.Error].WriteLineAsync($"{message}\n{Environment.StackTrace}\n").ConfigureAwait(false);
         }
 
-        public virtual async Task LogExceptionAsync(Exception exception)
+        public virtual async Task LogExceptionAsync(string pipelineName, Exception exception)
         {
             if (writerByLogType[LogType.Exception] != null)
-                await writerByLogType[LogType.Exception].WriteLineAsync(exception.ToString()).ConfigureAwait(false);
+                await writerByLogType[LogType.Exception].WriteLineAsync(exception.ToString() + "\n").ConfigureAwait(false);
         }
+
+        public virtual void LogProgress(string pipelineName, string message) => writerByLogType[LogType.Progress]?.WriteLine(message);
+        public virtual void Log(string pipelineName, string message) => writerByLogType[LogType.Log].WriteLine($"{message}\n{Environment.StackTrace}\n");
+        public virtual void LogWarning(string pipelineName, string message) => writerByLogType[LogType.Warning].WriteLine($"{message}\n{Environment.StackTrace}\n");
+        public virtual void LogError(string pipelineName, string message) => writerByLogType[LogType.Error].WriteLine($"{message}\n{Environment.StackTrace}\n");
+        public virtual void LogException(string pipelineName, Exception exception) => writerByLogType[LogType.Exception].WriteLine(exception.ToString() + "\n");
 
         public virtual void Dispose()
         {

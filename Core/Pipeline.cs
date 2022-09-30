@@ -13,17 +13,13 @@ namespace UnityEditorPipelineSystem.Core
         private readonly IContextContainer contextContainer;
         private readonly IReadOnlyCollection<ITask> tasks;
 
-        public Func<IPipelineLogger> PipelineLoggerFactory { private get; set; }
-
-        private IPipelineLogger pipelineLogger = default;
+        private ILogger pipelineLogger = default;
 
         public Pipeline(string pipelineName, IContextContainer contextContainer, IReadOnlyCollection<ITask> tasks)
         {
             Name = pipelineName;
             this.contextContainer = contextContainer;
             this.tasks = tasks;
-
-            PipelineLoggerFactory = PipelineLogger.GetDefaultPipelineLoggerFactory(this);
         }
 
         public async Task RunAsync(CancellationToken ct = default)
@@ -31,21 +27,9 @@ namespace UnityEditorPipelineSystem.Core
             if (IsBusy)
                 throw new InvalidOperationException($"already working: {Name}");
 
+            PipelineDebug.PushActivePipeline(this);
+
             IsBusy = true;
-
-            if (!contextContainer.ContainsContext<IPipelineLogger>())
-            {
-                if (PipelineLoggerFactory != null)
-                {
-                    pipelineLogger = PipelineLoggerFactory.Invoke();
-                }
-                else
-                {
-                    pipelineLogger = PipelineLogger.GetNonePipelineLoggerFactory(this).Invoke();
-                }
-
-                contextContainer.SetContext(pipelineLogger);
-            }
 
             foreach (var task in tasks)
             {
@@ -65,15 +49,15 @@ namespace UnityEditorPipelineSystem.Core
             }
 
             IsBusy = false;
+
+            PipelineDebug.PopActivePipeline();
         }
 
         private async Task RunRecursiveAsync(ITaskCollection taskCollection, CancellationToken ct)
         {
-            var logger = contextContainer.GetContext<IPipelineLogger>();
-
             if (!taskCollection.When(contextContainer))
             {
-                await logger.LogProgressAsync($"{DateTime.Now} [{taskCollection.Name}] Skip TaskCollection.");
+                await PipelineDebug.LogProgressAsync($"{DateTime.Now} [{taskCollection.Name}] Skip TaskCollection.");
                 return;
             }
 
@@ -81,7 +65,7 @@ namespace UnityEditorPipelineSystem.Core
 
             {
                 var start = DateTime.Now;
-                await logger.LogProgressAsync($"{start} [{taskCollection.Name}] Start TaskCollection.");
+                await PipelineDebug.LogProgressAsync($"{start} [{taskCollection.Name}] Start TaskCollection.");
                 foreach (var task in taskCollection.EnumerateTasks())
                 {
                     if (task is ITaskCollection nestedCollection)
@@ -95,18 +79,18 @@ namespace UnityEditorPipelineSystem.Core
                 }
                 var finish = DateTime.Now;
                 var elapsed = finish - start;
-                await logger.LogProgressAsync($"{finish} [{taskCollection.Name}] Finished TaskCollection. ({elapsed.TotalSeconds}[s])");
+                await PipelineDebug.LogProgressAsync($"{finish} [{taskCollection.Name}] Finished TaskCollection. ({elapsed.TotalSeconds}[s])");
             }
 
             ct.ThrowIfCancellationRequested();
 
             {
                 var start = DateTime.Now;
-                await logger.LogProgressAsync($"{start} [{taskCollection.Name}] Start Post Process.");
+                await PipelineDebug.LogProgressAsync($"{start} [{taskCollection.Name}] Start Post Process.");
                 await taskCollection.PostAsync(contextContainer);
                 var finish = DateTime.Now;
                 var elapsed = finish - start;
-                await logger.LogProgressAsync($"{finish} [{taskCollection.Name}] Finished Post Process. ({elapsed.TotalSeconds}[s])");
+                await PipelineDebug.LogProgressAsync($"{finish} [{taskCollection.Name}] Finished Post Process. ({elapsed.TotalSeconds}[s])");
             }
         }
 
@@ -116,13 +100,12 @@ namespace UnityEditorPipelineSystem.Core
             {
                 ContextInjector.Inject(contextContainer, task);
 
-                var logger = contextContainer.GetContext<IPipelineLogger>();
                 var start = DateTime.Now;
-                await logger.LogProgressAsync($"{start} [{task.Name}] Start Task.");
+                await PipelineDebug.LogProgressAsync($"{start} [{task.Name}] Start Task.");
                 var ret = syncTask.Run(contextContainer, ct);
                 var finish = DateTime.Now;
                 var elapsed = finish - start;
-                await logger.LogProgressAsync($"{finish} [{task.Name}] Finish Task. ({elapsed.TotalSeconds}[sec])");
+                await PipelineDebug.LogProgressAsync($"{finish} [{task.Name}] Finish Task. ({elapsed.TotalSeconds}[sec])");
 
                 if (IsError(ret))
                 {
@@ -135,13 +118,12 @@ namespace UnityEditorPipelineSystem.Core
             {
                 ContextInjector.Inject(contextContainer, task);
 
-                var logger = contextContainer.GetContext<IPipelineLogger>();
                 var start = DateTime.Now;
-                await logger.LogProgressAsync($"{start} [{task.Name}] Start Task. ");
+                await PipelineDebug.LogProgressAsync($"{start} [{task.Name}] Start Task. ");
                 var ret = await asyncableTask.RunAsync(contextContainer, ct);
                 var finish = DateTime.Now;
                 var elapsed = finish - start;
-                await logger.LogProgressAsync($"{finish} [{task.Name}] Finish Task. ({elapsed.TotalSeconds}[sec])");
+                await PipelineDebug.LogProgressAsync($"{finish} [{task.Name}] Finish Task. ({elapsed.TotalSeconds}[sec])");
 
                 if (IsError(ret))
                 {

@@ -17,7 +17,20 @@ namespace UnityEditorPipelineSystem.Editor
         [ContextMenu("RunAsync")]
         private async void RunAsyncForContextMenu()
         {
-            await RunAsync();
+            try
+            {
+                using var logger = CreateLogger(name);
+                PipelineDebug.Logger = logger;
+                await RunAsync();
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                PipelineDebug.Logger = default;
+            }
         }
 
         public async Task RunAsync()
@@ -30,15 +43,13 @@ namespace UnityEditorPipelineSystem.Editor
             }
 
             var tasks = taskProviders.Select(x => x.GetTask()).ToArray();
+            await PipelineUtility.RunAsync(name, contextContainer, tasks);
+        }
 
-            if (Application.isBatchMode)
-            {
-                await PipelineUtility.RunAsync(name, contextContainer, tasks, UnityPipelineLogger.GetBatchModeDefaultPipelineLoggerFactory);
-            }
-            else
-            {
-                await PipelineUtility.RunAsync(name, contextContainer, tasks, UnityPipelineLogger.GetDefaultPipelineLoggerFactory);
-            }
+        private static Core.ILogger CreateLogger(string name)
+        {
+            var directory = $"Library/pkg.max-enterme.unityeditor-pipeline-system/Logs/{name}";
+            return new UnityPipelineLogger($"{directory}/progress.log", $"{directory}/verbose.log", $"{directory}/warning.log", $"{directory}/error.log", $"{directory}/error.log");
         }
     }
 }
