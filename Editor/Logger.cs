@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UnityEditorPipelineSystem.Editor
 {
-    public class UnityPipelineLogger : Core.Logger, ILogHandler
+    public class Logger : Core.Logger, ILogHandler
     {
         private static ILogHandler defaultUnityLogHandler;
         private static ILogHandler GetDefaultUnityLogHandler()
@@ -17,7 +17,7 @@ namespace UnityEditorPipelineSystem.Editor
             _ = GetDefaultUnityLogHandler();
         }
 
-        public UnityPipelineLogger(string logProgressFile = default, string logFilePath = default, string logWarningFilePath = default, string logErrorFilePath = default, string logExceptionFilePath = default)
+        public Logger(string logProgressFile = default, string logFilePath = default, string logWarningFilePath = default, string logErrorFilePath = default, string logExceptionFilePath = default)
             : base(logProgressFile, logFilePath, logWarningFilePath, logErrorFilePath, logExceptionFilePath)
         {
             StoreDefaultUnityLogHandler();

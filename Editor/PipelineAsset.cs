@@ -8,9 +8,12 @@ using UnityEngine;
 
 namespace UnityEditorPipelineSystem.Editor
 {
-    [CreateAssetMenu(fileName = "PipelineAsset", menuName = "UnityEditorPipelineSystem/PipelineAsset")]
+    [CreateAssetMenu(menuName = "UnityEditorPipelineSystem/PipelineAsset")]
     public class PipelineAsset : ScriptableObject
     {
+        [field: SerializeField]
+        public LoggerProvider OverrideLoggerProvider { get; private set; }
+
         [SerializeField] private List<ContextProvider> contextProviders = default;
         [SerializeField] private List<TaskProvider> taskProviders = default;
 
@@ -19,7 +22,7 @@ namespace UnityEditorPipelineSystem.Editor
         {
             try
             {
-                using var logger = CreateLogger(name);
+                using var logger = CreateLogger(OverrideLoggerProvider, name);
                 PipelineDebug.Logger = logger;
                 await RunAsync();
             }
@@ -46,10 +49,15 @@ namespace UnityEditorPipelineSystem.Editor
             await PipelineUtility.RunAsync(name, contextContainer, tasks);
         }
 
-        private static Core.ILogger CreateLogger(string name)
+        private static Core.ILogger CreateLogger(LoggerProvider loggerProvider, string name)
         {
+            if (loggerProvider != null)
+            {
+                return loggerProvider.CreateLogger();
+            }
+
             var directory = $"Library/pkg.max-enterme.unityeditor-pipeline-system/Logs/{name}";
-            return new UnityPipelineLogger($"{directory}/progress.log", $"{directory}/verbose.log", $"{directory}/warning.log", $"{directory}/error.log", $"{directory}/error.log");
+            return new Logger($"{directory}/progress.log", $"{directory}/verbose.log", $"{directory}/warning.log", $"{directory}/error.log", $"{directory}/error.log");
         }
     }
 }

@@ -15,11 +15,12 @@ namespace UnityEditorPipelineSystem.Editor
             try
             {
                 var cliOptions = CommandLineArgumentContainer.Create();
-                using var logger = CreateLogger(cliOptions);
-                PipelineDebug.Logger = logger;
-
                 var path = cliOptions.GetOptionValue("PipelineAssetPath");
                 var pipelineAsset = AssetDatabase.LoadAssetAtPath<PipelineAsset>(path);
+
+                using var logger = CreateLogger(pipelineAsset, cliOptions);
+                PipelineDebug.Logger = logger;
+
                 await pipelineAsset.RunAsync();
             }
             catch (Exception e)
@@ -44,13 +45,18 @@ namespace UnityEditorPipelineSystem.Editor
             await pipeline.RunAsync();
         }
 
-        private static UnityPipelineLogger CreateLogger(CommandLineArgumentContainer cliOptions)
+        private static Core.ILogger CreateLogger(PipelineAsset pipelineAsset, CommandLineArgumentContainer cliOptions)
         {
+            if (pipelineAsset.OverrideLoggerProvider != null)
+            {
+                return pipelineAsset.OverrideLoggerProvider.CreateLogger();
+            }
+
             var logProgress = cliOptions.GetOrDefaultOptionValue("logProgress");
             var logVerbose = cliOptions.GetOrDefaultOptionValue("logVerbose");
             var logWarning = cliOptions.GetOrDefaultOptionValue("logWarning");
             var logError = cliOptions.GetOrDefaultOptionValue("logError");
-            return new UnityPipelineLogger(logProgress, logVerbose, logWarning, logError, logError);
+            return new Logger(logProgress, logVerbose, logWarning, logError, logError);
         }
     }
 }

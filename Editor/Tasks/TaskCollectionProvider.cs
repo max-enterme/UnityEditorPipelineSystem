@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UnityEditorPipelineSystem.Editor.Tasks
 {
-    [CreateAssetMenu(fileName = "TaskCollectionProvider", menuName = "UnityEditorPipelineSystem/Tasks/TaskCollectionProvider")]
+    [CreateAssetMenu(menuName = "UnityEditorPipelineSystem/Tasks/TaskCollectionProvider")]
     public class TaskCollectionProvider : TaskProvider
     {
         [SerializeField] private List<TaskProvider> taskProviders = default;

@@ -57,32 +57,38 @@ namespace UnityEditorPipelineSystem.Core
         public virtual async Task LogAsync(string pipelineName, string message)
         {
             if (writerByLogType[LogType.Log] != null)
-                await writerByLogType[LogType.Log].WriteLineAsync($"{message}\n{Environment.StackTrace}\n").ConfigureAwait(false);
+                await writerByLogType[LogType.Log].WriteLineAsync(GetMessageText(message, Environment.StackTrace)).ConfigureAwait(false);
         }
 
         public virtual async Task LogWarningAsync(string pipelineName, string message)
         {
             if (writerByLogType[LogType.Warning] != null)
-                await writerByLogType[LogType.Warning].WriteLineAsync($"{message}\n{Environment.StackTrace}\n").ConfigureAwait(false);
+                await writerByLogType[LogType.Warning].WriteLineAsync(GetMessageText(message, Environment.StackTrace)).ConfigureAwait(false);
         }
 
         public virtual async Task LogErrorAsync(string pipelineName, string message)
         {
             if (writerByLogType[LogType.Error] != null)
-                await writerByLogType[LogType.Error].WriteLineAsync($"{message}\n{Environment.StackTrace}\n").ConfigureAwait(false);
+                await writerByLogType[LogType.Error].WriteLineAsync(GetMessageText(message, Environment.StackTrace)).ConfigureAwait(false);
         }
 
         public virtual async Task LogExceptionAsync(string pipelineName, Exception exception)
         {
             if (writerByLogType[LogType.Exception] != null)
-                await writerByLogType[LogType.Exception].WriteLineAsync(exception.ToString() + "\n").ConfigureAwait(false);
+                await writerByLogType[LogType.Exception].WriteLineAsync(GetExceptionMessageText(exception)).ConfigureAwait(false);
         }
 
         public virtual void LogProgress(string pipelineName, string message) => writerByLogType[LogType.Progress]?.WriteLine(message);
-        public virtual void Log(string pipelineName, string message) => writerByLogType[LogType.Log].WriteLine($"{message}\n{Environment.StackTrace}\n");
-        public virtual void LogWarning(string pipelineName, string message) => writerByLogType[LogType.Warning].WriteLine($"{message}\n{Environment.StackTrace}\n");
-        public virtual void LogError(string pipelineName, string message) => writerByLogType[LogType.Error].WriteLine($"{message}\n{Environment.StackTrace}\n");
-        public virtual void LogException(string pipelineName, Exception exception) => writerByLogType[LogType.Exception].WriteLine(exception.ToString() + "\n");
+        public virtual void Log(string pipelineName, string message) => writerByLogType[LogType.Log].WriteLine(GetMessageText(message, Environment.StackTrace));
+        public virtual void LogWarning(string pipelineName, string message) => writerByLogType[LogType.Warning].WriteLine(GetMessageText(message, Environment.StackTrace));
+        public virtual void LogError(string pipelineName, string message) => writerByLogType[LogType.Error].WriteLine(GetMessageText(message, Environment.StackTrace));
+        public virtual void LogException(string pipelineName, Exception exception) => writerByLogType[LogType.Exception].WriteLine(GetExceptionMessageText(exception));
+
+        protected virtual string GetMessageText(string message, string stackTrace)
+            => $"{message}\n{Environment.StackTrace}\n{DateTime.Now}\n";
+
+        protected virtual string GetExceptionMessageText(Exception exception)
+            => $"{exception}\n{DateTime.Now}\n";
 
         public virtual void Dispose()
         {

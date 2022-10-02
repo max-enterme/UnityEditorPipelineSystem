@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace UnityEditorPipelineSystem.Editor.Contexts.CommandLineArgumentConversion
 {
-    [CreateAssetMenu(fileName = "GenericCommandLineArgumentConverter", menuName = "UnityEditorPipelineSystem/Contexts/CommandLineArgumentConverters/GenericCommandLineArgumentConverter")]
+    [CreateAssetMenu(menuName = "UnityEditorPipelineSystem/Contexts/CommandLineArgumentConverters/GenericCommandLineArgumentConverter")]
     public class GenericCommandLineArgumentConverter : CommandLineArgumentConverter
     {
         [SerializeField] private MonoScript script = default;

@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace UnityEditorPipelineSystem.Editor.Tasks
 {
-    [CreateAssetMenu(fileName = "GenericTaskProvider", menuName = "UnityEditorPipelineSystem/Tasks/GenericTaskProvider")]
+    [CreateAssetMenu(menuName = "UnityEditorPipelineSystem/Tasks/GenericTaskProvider")]
     public class GenericTaskProvider : TaskProvider
     {
         [SerializeField] private MonoScript script = default;

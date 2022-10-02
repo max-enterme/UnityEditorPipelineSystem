@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace UnityEditorPipelineSystem.Editor.Contexts
 {
-    [CreateAssetMenu(fileName = "GenericContextProvider", menuName = "UnityEditorPipelineSystem/Contexts/GenericContextProvider")]
+    [CreateAssetMenu(menuName = "UnityEditorPipelineSystem/Contexts/GenericContextProvider")]
     public class GenericContextProvider : ContextProvider
     {
         [SerializeField] private MonoScript script = default;
