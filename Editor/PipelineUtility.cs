@@ -11,21 +11,53 @@ namespace UnityEditorPipelineSystem.Editor
     {
         public static async void RunAsyncFromBatchMode()
         {
-            var success = true;
+            static PipelineAsset LoadPipelineAsset(CommandLineArgumentContainer cliOptions)
+            {
+                cliOptions = CommandLineArgumentContainer.Create();
+                var path = cliOptions.GetOptionValue("PipelineAssetPath");
+                return AssetDatabase.LoadAssetAtPath<PipelineAsset>(path);
+            }
+
+            var cliOptions = CommandLineArgumentContainer.Create();
+            PipelineAsset pipelineAsset = default;
             try
             {
-                var cliOptions = CommandLineArgumentContainer.Create();
-                var path = cliOptions.GetOptionValue("PipelineAssetPath");
-                var pipelineAsset = AssetDatabase.LoadAssetAtPath<PipelineAsset>(path);
-
-                using var logger = CreateLogger(pipelineAsset, cliOptions);
-                PipelineDebug.Logger = logger;
-
-                await pipelineAsset.RunAsync();
+                pipelineAsset = LoadPipelineAsset(cliOptions);
             }
             catch (Exception e)
             {
                 Debug.LogException(e);
+
+                if (Application.isBatchMode)
+                {
+                    EditorApplication.Exit(1);
+                }
+            }
+
+            var pipeline = pipelineAsset.InstantiatePipeline();
+            using var logger = CreateLogger(pipelineAsset, pipeline, cliOptions);
+            await RunAsync(pipeline, logger);
+        }
+
+        public static async Task RunAsync(Pipeline pipeline, Core.ILogger logger)
+        {
+            var success = true;
+            try
+            {
+                PipelineDebug.Logger = logger;
+                await pipeline.RunAsync();
+            }
+            catch (Exception e)
+            {
+                if (PipelineDebug.Logger != null)
+                {
+                    PipelineDebug.LogException(e);
+                }
+                else
+                {
+                    Debug.LogException(e);
+                }
+
                 success = false;
             }
             finally
@@ -39,17 +71,16 @@ namespace UnityEditorPipelineSystem.Editor
             }
         }
 
-        public static async Task RunAsync(string name, IContextContainer contextContainer, IReadOnlyCollection<ITask> tasks)
+        public static Pipeline InstantiatePipeline(string name, IContextContainer contextContainer, IReadOnlyCollection<ITask> tasks)
         {
-            using var pipeline = new Pipeline(name, contextContainer, tasks);
-            await pipeline.RunAsync();
+            return new Pipeline(name, contextContainer, tasks);
         }
 
-        private static Core.ILogger CreateLogger(PipelineAsset pipelineAsset, CommandLineArgumentContainer cliOptions)
+        private static Core.ILogger CreateLogger(PipelineAsset pipelineAsset, Pipeline pipeline, CommandLineArgumentContainer cliOptions)
         {
             if (pipelineAsset.OverrideLoggerProvider != null)
             {
-                return pipelineAsset.OverrideLoggerProvider.CreateLogger();
+                return pipelineAsset.OverrideLoggerProvider.CreateLogger(pipeline);
             }
 
             var logProgress = cliOptions.GetOrDefaultOptionValue("logProgress");

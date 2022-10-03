@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using UnityEditorPipelineSystem.Core;
 using UnityEditorPipelineSystem.Editor.Contexts;
 using UnityEditorPipelineSystem.Editor.Tasks;
@@ -18,25 +17,14 @@ namespace UnityEditorPipelineSystem.Editor
         [SerializeField] private List<TaskProvider> taskProviders = default;
 
         [ContextMenu("RunAsync")]
-        private async void RunAsyncForContextMenu()
+        public async void RunAsync()
         {
-            try
-            {
-                using var logger = CreateLogger(OverrideLoggerProvider, name);
-                PipelineDebug.Logger = logger;
-                await RunAsync();
-            }
-            catch
-            {
-                throw;
-            }
-            finally
-            {
-                PipelineDebug.Logger = default;
-            }
+            var pipeline = InstantiatePipeline();
+            using var logger = CreateLogger(OverrideLoggerProvider, pipeline);
+            await PipelineUtility.RunAsync(pipeline, logger);
         }
 
-        public async Task RunAsync()
+        public Pipeline InstantiatePipeline()
         {
             var contextContainer = new ContextContainer();
 
@@ -46,17 +34,17 @@ namespace UnityEditorPipelineSystem.Editor
             }
 
             var tasks = taskProviders.Select(x => x.GetTask()).ToArray();
-            await PipelineUtility.RunAsync(name, contextContainer, tasks);
+            return PipelineUtility.InstantiatePipeline(name, contextContainer, tasks);
         }
 
-        private static Core.ILogger CreateLogger(LoggerProvider loggerProvider, string name)
+        private static Core.ILogger CreateLogger(LoggerProvider loggerProvider, Pipeline pipeline)
         {
             if (loggerProvider != null)
             {
-                return loggerProvider.CreateLogger();
+                return loggerProvider.CreateLogger(pipeline);
             }
 
-            var directory = $"Library/pkg.max-enterme.unityeditor-pipeline-system/Logs/{name}";
+            var directory = $"Library/pkg.max-enterme.unityeditor-pipeline-system/Logs/{pipeline.Name}";
             return new Logger($"{directory}/progress.log", $"{directory}/verbose.log", $"{directory}/warning.log", $"{directory}/error.log", $"{directory}/error.log");
         }
     }
