@@ -49,46 +49,49 @@ namespace UnityEditorPipelineSystem.Core
         }
 
         public virtual async Task LogProgressAsync(string pipelineName, string message)
-        {
-            if (writerByLogType[LogType.Progress] != null)
-                await writerByLogType[LogType.Progress].WriteLineAsync(GetProgressMessageText(message)).ConfigureAwait(false);
-        }
+            => await LogAsyncInternal(pipelineName, LogType.Progress, GetProgressMessageText(message));
 
         public virtual async Task LogAsync(string pipelineName, string message)
-        {
-            if (writerByLogType[LogType.Log] != null)
-                await writerByLogType[LogType.Log].WriteLineAsync(GetMessageText(message, Environment.StackTrace)).ConfigureAwait(false);
-        }
+            => await LogAsyncInternal(pipelineName, LogType.Log, GetMessageText(message, Environment.StackTrace));
 
         public virtual async Task LogWarningAsync(string pipelineName, string message)
-        {
-            if (writerByLogType[LogType.Warning] != null)
-                await writerByLogType[LogType.Warning].WriteLineAsync(GetMessageText(message, Environment.StackTrace)).ConfigureAwait(false);
-        }
+            => await LogAsyncInternal(pipelineName, LogType.Warning, GetMessageText(message, Environment.StackTrace));
 
         public virtual async Task LogErrorAsync(string pipelineName, string message)
-        {
-            if (writerByLogType[LogType.Error] != null)
-                await writerByLogType[LogType.Error].WriteLineAsync(GetMessageText(message, Environment.StackTrace)).ConfigureAwait(false);
-        }
+            => await LogAsyncInternal(pipelineName, LogType.Error, GetMessageText(message, Environment.StackTrace));
 
         public virtual async Task LogExceptionAsync(string pipelineName, Exception exception)
+            => await LogAsyncInternal(pipelineName, LogType.Exception, GetExceptionMessageText(exception));
+
+        protected virtual async Task LogAsyncInternal(string pipelineName, LogType logType, string message)
         {
-            if (writerByLogType[LogType.Exception] != null)
-                await writerByLogType[LogType.Exception].WriteLineAsync(GetExceptionMessageText(exception)).ConfigureAwait(false);
+            if (writerByLogType[logType] != null)
+            {
+                await writerByLogType[logType].WriteLineAsync(message);
+                await writerByLogType[logType].FlushAsync();
+            }
         }
 
-        public virtual void LogProgress(string pipelineName, string message) => writerByLogType[LogType.Progress]?.WriteLine(GetProgressMessageText(message));
-        public virtual void Log(string pipelineName, string message) => writerByLogType[LogType.Log]?.WriteLine(GetMessageText(message, Environment.StackTrace));
-        public virtual void LogWarning(string pipelineName, string message) => writerByLogType[LogType.Warning]?.WriteLine(GetMessageText(message, Environment.StackTrace));
-        public virtual void LogError(string pipelineName, string message) => writerByLogType[LogType.Error]?.WriteLine(GetMessageText(message, Environment.StackTrace));
-        public virtual void LogException(string pipelineName, Exception exception) => writerByLogType[LogType.Exception]?.WriteLine(GetExceptionMessageText(exception));
+        public virtual void LogProgress(string pipelineName, string message) => LogInternal(pipelineName, LogType.Progress, GetProgressMessageText(message));
+        public virtual void Log(string pipelineName, string message) => LogInternal(pipelineName, LogType.Log, GetMessageText(message, Environment.StackTrace));
+        public virtual void LogWarning(string pipelineName, string message) => LogInternal(pipelineName, LogType.Warning, GetMessageText(message, Environment.StackTrace));
+        public virtual void LogError(string pipelineName, string message) => LogInternal(pipelineName, LogType.Error, GetMessageText(message, Environment.StackTrace));
+        public virtual void LogException(string pipelineName, Exception exception) => LogInternal(pipelineName, LogType.Exception, GetExceptionMessageText(exception));
+
+        protected virtual void LogInternal(string pipeline, LogType logType, string message)
+        {
+            if (writerByLogType[logType] != null)
+            {
+                writerByLogType[logType].WriteLine(message);
+                writerByLogType[logType].Flush();
+            }
+        }
 
         protected virtual string GetProgressMessageText(string message)
             => $"[{DateTime.Now}]{message}";
 
         protected virtual string GetMessageText(string message, string stackTrace)
-            => $"[{DateTime.Now}]\n{message}\n{Environment.StackTrace}\n";
+            => $"[{DateTime.Now}]\n{message}\n{stackTrace}\n";
 
         protected virtual string GetExceptionMessageText(Exception exception)
             => $"[{DateTime.Now}]\n{exception}\n";
