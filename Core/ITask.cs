@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ namespace UnityEditorPipelineSystem.Core
     public interface ITask
     {
         public string Name { get; set; }
+        public TimeSpan Timeout { get; }
     }
 
     public interface ITaskCollection : ITask

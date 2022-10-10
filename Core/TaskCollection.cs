@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace UnityEditorPipelineSystem.Core
@@ -5,6 +6,7 @@ namespace UnityEditorPipelineSystem.Core
     public class TaskCollection : ITaskCollection
     {
         public string Name { get; set; } = typeof(TaskCollection).FullName;
+        public TimeSpan Timeout { get; set; } = TimeSpan.Zero;
 
         public readonly List<ITask> Tasks = new List<ITask>();
         public IEnumerable<ITask> EnumerateTasks() => Tasks;

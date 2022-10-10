@@ -54,7 +54,14 @@ namespace UnityEditorPipelineSystem.Core
                 return;
             }
 
-            ct.ThrowIfCancellationRequested();
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+            if (taskCollection.Timeout > TimeSpan.Zero)
+            {
+                linkedCts.CancelAfter(taskCollection.Timeout);
+            }
+
+            linkedCts.Token.ThrowIfCancellationRequested();
 
             {
                 var start = DateTime.Now;
@@ -63,11 +70,11 @@ namespace UnityEditorPipelineSystem.Core
                 {
                     if (task is ITaskCollection nestedCollection)
                     {
-                        await RunRecursiveAsync(nestedCollection, ct);
+                        await RunRecursiveAsync(nestedCollection, linkedCts.Token);
                     }
                     else
                     {
-                        await RunUnitAsync(task, ct);
+                        await RunUnitAsync(task, linkedCts.Token);
                     }
                 }
                 var finish = DateTime.Now;
@@ -75,7 +82,7 @@ namespace UnityEditorPipelineSystem.Core
                 await PipelineDebug.LogProgressAsync($"[{taskCollection.Name}] Finished TaskCollection. ({elapsed.TotalSeconds}[s])");
             }
 
-            ct.ThrowIfCancellationRequested();
+            linkedCts.Token.ThrowIfCancellationRequested();
 
             {
                 var start = DateTime.Now;
@@ -95,7 +102,15 @@ namespace UnityEditorPipelineSystem.Core
 
                 var start = DateTime.Now;
                 await PipelineDebug.LogProgressAsync($"[{task.Name}] Start Task.");
-                var ret = syncTask.Run(contextContainer, ct);
+
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                if (task.Timeout > TimeSpan.Zero)
+                {
+                    linkedCts.CancelAfter(task.Timeout);
+                }
+
+                var ret = syncTask.Run(contextContainer, linkedCts.Token);
+
                 var finish = DateTime.Now;
                 var elapsed = finish - start;
                 await PipelineDebug.LogProgressAsync($"[{task.Name}] Finish Task. ({elapsed.TotalSeconds}[sec])");
@@ -113,7 +128,15 @@ namespace UnityEditorPipelineSystem.Core
 
                 var start = DateTime.Now;
                 await PipelineDebug.LogProgressAsync($"[{task.Name}] Start Task. ");
-                var ret = await asyncableTask.RunAsync(contextContainer, ct);
+
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                if (task.Timeout > TimeSpan.Zero)
+                {
+                    linkedCts.CancelAfter(task.Timeout);
+                }
+
+                var ret = await asyncableTask.RunAsync(contextContainer, linkedCts.Token);
+
                 var finish = DateTime.Now;
                 var elapsed = finish - start;
                 await PipelineDebug.LogProgressAsync($"[{task.Name}] Finish Task. ({elapsed.TotalSeconds}[sec])");
